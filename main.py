@@ -3,7 +3,9 @@ import openai
 import runpy
 import subprocess
 import matplotlib.pyplot as plt
-openai.api_key = "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"
+openai.api_key = "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"
+
+path = "C:/Users/int_shansiming/Desktop/Prediction/Nasdaq.csv"
 
 # Ask user for input
 user_input_1 = input("Enter the prompt")
