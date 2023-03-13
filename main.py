@@ -1,11 +1,17 @@
-# Set up the parameters for the GPT-3 API
+# Import all necessary packages
 import openai
 import runpy
 import subprocess
 import matplotlib.pyplot as plt
-openai.api_key = "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"
-
+openai.api_key = "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"
 path = "C:/Users/int_shansiming/Desktop/Prediction/Nasdaq.csv"
+path2 = "C:/Users/int_shansiming/Desktop/Prediction/data.csv"
+
+# Set up the parameters for the GPT-3 API
+model = "text-davinci-002"
+temperature_1 = 0.1
+temperature_2 = 0.7
+max_tokens = 2000
 
 # Ask user for input
 user_input_1 = input("Enter the prompt")
@@ -14,6 +20,7 @@ user_input_1 = input("Enter the prompt")
 if any(keyword in user_input_1 for keyword in ["plot", "graph", "analyze", "analysis"]):
     features_x = input("Enter the x")
     features_y = input("Enter the y")
+    method = input("Enter the plot type")
 else:
     user_input_1 = user_input_1
 
@@ -25,39 +32,46 @@ if any(keyword in user_input_1 for keyword in ["plot", "graph", "analyze", "anal
     prompt = "Generate Python code that imports the dataset from " \
              + user_input_file \
              + ", Generate Python code that cleans the dataset" \
-             + ", Using pd.to_numeric() to change all numbers' type to float" \
-             + ", Using pd.to_datetime() to change all date like columns type to datetime" \
-             + ", then creates and print a table that summary the dataset features"\
-             + ", Generate Python code that plot the relationship of x = " \
+             + ", then creates and print a table that summary the data's numerical features"\
+             + ", Generate Python code generate a " \
+             + method \
+             + " which displays the relationship between x = " \
              + features_x \
-             + "and y = "\
+             + " and "\
              + features_y \
+             + " add a legend(if needed) and a title to the graph"\
              + " using the Matplotlib library" \
-             + "Following the above prompt strictly! No annotation to the code!"
+             + " Following the above prompt strictly!" \
+             + " No notes to the code!"
+
+    print(prompt)
+
+    # Generate code using the GPT-3 API
+    response = openai.Completion.create(
+        engine=model,
+        prompt=prompt,
+        max_tokens=max_tokens,
+        temperature=temperature_1,
+    )
+
+    # Save the generated code to a file
+    with open("generated_code.py", "w") as f:
+        f.write(response.choices[0].text.strip())
+
+    # Import the generated code as a module
+    import generated_code
+
+    runpy.run_path('generated_code.py')
+
 else:
     prompt = user_input_1 + ", The file is from: " + user_input_file
-
-model = "text-davinci-002"
-temperature = 0.4
-max_tokens = 500
-
-# Generate code using the GPT-3 API
-response = openai.Completion.create(
-    engine=model,
-    prompt=prompt,
-    max_tokens=max_tokens,
-    temperature=temperature,
-)
-
-# Save the generated code to a file
-with open("generated_code.py", "w") as f:
-    f.write(response.choices[0].text.strip())
-
-# Import the generated code as a module
-
-import generated_code
-
-runpy.run_path('generated_code.py')
+    response = openai.Completion.create(
+        engine=model,
+        prompt=prompt,
+        max_tokens=max_tokens,
+        temperature=temperature_1,
+    )
+    print(response.choices[0].text.strip())
 
 prompt_text = "Generate a report on the dataset from " \
             + user_input_file \
@@ -69,6 +83,6 @@ response_text = openai.Completion.create(
     engine=model,
     prompt=prompt_text,
     max_tokens=max_tokens,
-    temperature=temperature,
+    temperature=temperature_2,
 )
-print(response_text.choices[0].text.strip())
+print("Brief Summary Of the Data: " + response_text.choices[0].text.strip())
