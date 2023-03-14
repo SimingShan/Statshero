@@ -3,9 +3,10 @@ import openai
 import runpy
 import subprocess
 import matplotlib.pyplot as plt
-openai.api_key = "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"
+openai.api_key = "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"
 path = "C:/Users/int_shansiming/Desktop/Prediction/Nasdaq.csv"
 path2 = "C:/Users/int_shansiming/Desktop/Prediction/data.csv"
+
 
 # Set up the parameters for the GPT-3 API
 model = "text-davinci-002"
@@ -14,7 +15,7 @@ temperature_2 = 0.7
 max_tokens = 2000
 
 # Ask user for input
-user_input_1 = input("Enter the prompt")
+user_input_1 = input("Enter your request")
 
 # Ask for features if the user ask for a plot
 if any(keyword in user_input_1 for keyword in ["plot", "graph", "analyze", "analysis"]):
@@ -27,11 +28,23 @@ else:
 # Ask for file location
 user_input_file = input("Enter the file location:")
 
+# Ask for whether needs cleaning
+cleanornot = input("would you like to clean your dataset first?[yes or no]")
+
+# if ask for cleaning
+if cleanornot == 'yes':
+    import cleaning
+    cleaned_data = cleaning.clean(user_input_file)
+    user_input_file = input("Enter your cleaned dataset location:")
+    cleaned_data.to_csv(user_input_file)
+else:
+    pass
+
 # Check if the input contains any keywords
 if any(keyword in user_input_1 for keyword in ["plot", "graph", "analyze", "analysis"]):
     prompt = "Generate Python code that imports the dataset from " \
              + user_input_file \
-             + ", Generate Python code that cleans the dataset" \
+             + ". Generate Python code that cleans the dataset" \
              + ", then creates and print a table that summary the data's numerical features"\
              + ", Generate Python code generate a " \
              + method \
@@ -44,7 +57,6 @@ if any(keyword in user_input_1 for keyword in ["plot", "graph", "analyze", "anal
              + " Following the above prompt strictly!" \
              + " No notes to the code!"
 
-    print(prompt)
 
     # Generate code using the GPT-3 API
     response = openai.Completion.create(
