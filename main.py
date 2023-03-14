@@ -89,7 +89,11 @@ prompt_text = "Generate a report on the dataset from " \
             + user_input_file \
             + "The report should include a summary of the dataset, any notable trends or patterns in the data, " \
               "key insights that can be gleaned from the data, and any other relevant information. " \
-              "Please use clear and concise language, and include visualizations if appropriate."
+            + "Then, remember to analyze relationship between x = " \
+            + features_x \
+            + " and "\
+            + features_y \
+            + "Please use clear and concise language."
 
 response_text = openai.Completion.create(
     engine=model,
