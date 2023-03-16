@@ -1,11 +1,21 @@
-# Universal cleaning dataset ultimate code
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
+from dateutil.parser import parse
 
-def clean(data):
+def is_date(string):
+    try:
+        parse(string)
+        return True
+    except ValueError:
+        return False
+
+def clean(file_path):
     # import the dataset
-    data = pd.read_csv(data)
-
+    try:
+        data = pd.read_csv(file_path)
+    except ValueError:
+        data = pd.read_excel(file_path)
     # Drop the missing data
     data = data.dropna()
 
@@ -37,13 +47,7 @@ def clean(data):
             non_float_cols.append(col)
     # 2(2):
     for col in non_float_cols:
-        try:
-            data[col] = pd.to_datetime(data[col], format='%m/%d/%Y')
-        except ValueError:
-            pass
+        if data[col].apply(is_date).all():
+            data[col] = pd.to_datetime(data[col].apply(parse))
     return data
-
-
-
-
 

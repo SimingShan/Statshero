@@ -5,32 +5,35 @@ import subprocess
 import matplotlib.pyplot as plt
 import pandas as pd
 
-openai.api_key = "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"
+openai.api_key = "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"
 path = "C:/Users/int_shansiming/Desktop/Prediction/Nasdaq.csv"
 path2 = "C:/Users/int_shansiming/Desktop/Prediction/data.csv"
 path3 = "C:/Users/int_shansiming/Desktop/Prediction/DailyDelhiClimateTest.csv"
-
+path4 = "C:/Users/int_shansiming/Desktop/Prediction/salary.xlsx"
 
 # Set up the parameters for the GPT-3 API
 model = "text-davinci-002"
-temperature_1 = 0.1
+temperature_1 = 0.5
 temperature_2 = 1
-max_tokens = 5000
+max_tokens = 3000
 
 # Ask for file location
 user_input_file = input("Enter the file location:")
 
 # import the data
 try:
-    user_data=pd.read_csv(user_input_file)
+    user_data = pd.read_csv(user_input_file)
 except ValueError:
-    user_data=pd.read_excel(user_input_file)
+    user_data = pd.read_excel(user_input_file)
 
 # Then get the column names
 col_name = user_data.columns.tolist()
 
 # Ask user for input
 user_input_1 = input("Enter your request")
+
+# Language setting
+user_language = input("In what language do you wish your report to be?")
 
 # Ask for features if the user ask for a plot
 if any(keyword in user_input_1 for keyword in ["plot", "graph", "analyze", "analysis"]):
@@ -40,24 +43,10 @@ if any(keyword in user_input_1 for keyword in ["plot", "graph", "analyze", "anal
 else:
     user_input_1 = user_input_1
 
-
-# Ask for whether needs cleaning
-cleanornot = input("would you like to clean your dataset first?[yes or no]")
-
-# if ask for cleaning
-if cleanornot == 'yes':
-    import cleaning
-    cleaned_data = cleaning.clean(user_input_file)
-    user_input_file = input("Enter your cleaned dataset location:")
-    cleaned_data.to_csv(user_input_file)
-else:
-    pass
 # Introduce the plot type
 # Check if the input contains any keywords
 if any(keyword in user_input_1 for keyword in ["plot", "graph", "analyze", "analysis"]):
-    prompt = "Please introduce " \
-            + method\
-            +"and explain how they are used in data analysis."
+    prompt = f'''Introduce {method} and explain how they are used in data analysis  in {user_language}.'''
 
     response = openai.Completion.create(
         engine=model,
@@ -66,16 +55,19 @@ if any(keyword in user_input_1 for keyword in ["plot", "graph", "analyze", "anal
         temperature=temperature_1,
     )
 
-print(f"The plot shown is called {method}, {response.choices[0].text.strip()}")
+print(f"{method}, {response.choices[0].text.strip()}")
 
 # Check if the input contains any keywords
 if any(keyword in user_input_1 for keyword in ["plot", "graph", "analyze", "analysis"]):
-    prompt = f'''Generate Python code that imports the dataset from {user_input_file}. 
-    Generate Python code that cleans the dataset, then creates and prints a chart that summarizes the data's features. 
-    Generate Python code to generate a {method} which displays the relationship between x = {features_x} and {features_y}. 
-    Add a legend (if needed) and a title to the graph using the Matplotlib library. 
-    Follow the above prompt strictly! 
-    No notes to the code!
+    prompt = f'''
+   Generate Python code to accomplish the following tasks:
+1. Import cleaning.py and use the cleaning.clean() function to import and clean the dataset from {user_input_file}, save as 'df'.
+2. Import matplotlib.pyplot as plt and create a {method} to display the relationship between x = {features_x} and y = {features_y}.
+3. Add a title to the graph using the Matplotlib library.
+4. If there are two features in {features_y}, add a legend.
+5. Label the axes using appropriate units based on the names of the features.
+
+Please provide the code without any additional comments or notes.
     '''
 
     # Generate code using the GPT-3 API
@@ -120,6 +112,8 @@ The report should include:
 4. Correlations between variables and their significance
 5. Identify trends, patterns, correlations, or anomalies in the data and describe their significance.
 
+And the report should be in {user_language}
+
 Please present the findings in a clear, precise, and professional manner.
 '''
 
@@ -132,7 +126,7 @@ response_text = openai.Completion.create(
 print(f'''{response_text.choices[0].text.strip()}''')
 
 prompt_text = f'''
-Please provide the required data analysis report for the following dataset:
+Please provide the required data analysis report in {user_language} for the following dataset:
 
 {user_input_file}
 
@@ -153,3 +147,6 @@ response_text = openai.Completion.create(
     temperature=temperature_2,
 )
 print(f'''{response_text.choices[0].text.strip()}''')
+
+path3 = "C:/Users/int_shansiming/Desktop/Prediction/DailyDelhiClimateTest.csv"
+path4 = "C:/Users/int_shansiming/Desktop/Prediction/salary.xlsx"
