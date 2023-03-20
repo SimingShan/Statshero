@@ -4,19 +4,24 @@ import runpy
 import subprocess
 import matplotlib.pyplot as plt
 import pandas as pd
+import numpy as np
+from tabulate import tabulate
+from statsmodels.tsa.stattools import adfuller
 
-openai.api_key = "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"
+openai.api_key = "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"
 path = "C:/Users/int_shansiming/Desktop/Prediction/Nasdaq.csv"
 path2 = "C:/Users/int_shansiming/Desktop/Prediction/data.csv"
 path3 = "C:/Users/int_shansiming/Desktop/Prediction/DailyDelhiClimateTest.csv"
 path4 = "C:/Users/int_shansiming/Desktop/Prediction/salary.xlsx"
 
+# ------------------------------------------
 # Set up the parameters for the GPT-3 API
 model = "text-davinci-002"
 temperature_1 = 0.1
 temperature_2 = 1
 max_tokens = 3200
 
+# ------------------------------------------
 # Ask for file location
 user_input_file = input("Enter the file location:");
 
@@ -45,6 +50,7 @@ else:
 
 # Building a model?
 ml_model = input("What method do you wish to build your model?")
+# ------------------------------------------
 
 # Introduce the plot type
 # Check if the input contains any keywords
@@ -69,6 +75,7 @@ if any(keyword in user_input_1 for keyword in ["plot", "graph", "analyze", "anal
 2. Import matplotlib.pyplot as plt and create a {method} to display the relationship between x = {features_x} and y = {features_y}.
 3. Add a title to the graph using the Matplotlib library.
 4. Label the axes using appropriate units based on the names of the features.
+5. make the size of the plot: plt.figure(figsize=(12, 6))
 
 Please provide the code without any additional comments or notes.
     '''
@@ -100,18 +107,14 @@ else:
     )
     print(response.choices[0].text.strip())
 
+# ------------------------------------------
 # Using openai api to generate a comprehensive report
+print(" ")
 
 prompt_text = f'''
-Please provide a comprehensive data analysis report for the following dataset:
-
-{user_input_file}
-The report should include:
-Overview of the dataset: Briefly describe the dataset (how many observations there are), its variables, and their meanings.
-Descriptive statistics: (mean, median, mode, standard deviation, etc.) for each variable as a well-formatted table
-
-NOTE: The report should be in {user_language}
-Please present the findings in a clear, precise, and professional manner.
+Using the Excel file {user_input_file}, please provide a brief introduction to the following variables: 
+{col_name}. 
+Please only describe these variables and do not create any new ones. 
 '''
 
 response_text = openai.Completion.create(
@@ -122,85 +125,77 @@ response_text = openai.Completion.create(
 )
 print(f'''{response_text.choices[0].text.strip()}''')
 
-prompt_text = f'''
-Please provide a comprehensive data analysis for the following dataset by following the commend below:
+# --------------------------
+# Generate the descriptive statistics
+from Descriptive_statistics import des_chart
 
-{user_input_file}
+des_stats = des_chart(user_input_file)
+print(tabulate(des_stats, headers='keys', tablefmt='github', showindex=True))
 
-Identification of any potential outliers or missing values
-Report variables that has strong correlations and what are their significance(Avoid duplicated sentences)
-Identify trends, patterns, correlations, or anomalies in the data and describe their significance.
-
-And the report should be in {user_language}
-Avoid duplicated sentences
-
-The format should be (as an example):
-topic(change topic to actual topic):
-- point1(change point to actual outcome):
-- point2(change point to actual outcome):
-- point3(change point to actual outcome): 
-...
-
-Please present the findings in a clear, precise, and professional manner.
+# Write a prompt that can read the descriptive statistics
+prompt_des_stats = f'''
+Here is a chart of descriptive statistics from the Excel file {user_input_file}:
+{des_stats}
+Please provide a detailed description and insights of the main characteristics and patterns in this summary chart
+In a professional statistician's tongue.
 '''
 
 response_text = openai.Completion.create(
     engine=model,
-    prompt=prompt_text,
+    prompt=prompt_des_stats,
     max_tokens=max_tokens,
     temperature=temperature_2,
 )
 print(f'''{response_text.choices[0].text.strip()}''')
 
-prompt_text = f'''
-Please provide a comprehensive data analysis for the following dataset by following the commend below:
-{user_input_file}
-Identify and describe the significance of trends, patterns, correlations, or anomalies in the data.
-the report should be in {user_language}
+# --------------------------
+# Generate the correlation relationship chart
+from Descriptive_statistics import cor_chart
 
-The format should be (as an example):
-topic(change topic to actual topic):
-- point1(change point to actual outcome):
-- point2(change point to actual outcome):
-- point3(change point to actual outcome): 
-...
+cor_stats = cor_chart(user_input_file)
+print(tabulate(cor_stats, headers='keys', tablefmt='github', showindex=True))
 
-Please present the findings in a clear, precise, and professional manner.
+prompt_cor_stats = f'''
+Here is a chart of correlation from the Excel file {user_input_file}:
+{cor_stats}
+Please provide a detailed description and insights of 
+the main characteristics and patterns in this correlation chart,
+then analyze its insights
+In a professional statistician's tongue.
 '''
 
 response_text = openai.Completion.create(
     engine=model,
-    prompt=prompt_text,
+    prompt=prompt_cor_stats,
     max_tokens=max_tokens,
     temperature=temperature_2,
 )
 print(f'''{response_text.choices[0].text.strip()}''')
 
-prompt_text = f'''
-Please provide a comprehensive data analysis for the following dataset by following the commend below:
+# --------------------------
+# If the data is time series, then whether stationary?
+from ADF_test import is_stationary
 
-{user_input_file}
+stationary_message = is_stationary(user_input_file, features_y)
+print(stationary_message)
 
-Analyze {features_x} and {features_y} using {ml_model} model
-Build the {ml_model} model between {features_x} and {features_y}
-Calculate and display the equation of the {ml_model} model built above and explain its outcome parameters
-Explain this model's meaning(Do not show the code)
-
-And the report should be in {user_language}
-Avoid duplicated sentences
-
-...
-
-Please present the findings in a clear, precise, and professional manner.
+prompt_cor_stats = f'''
+Here is a message about whether the Excel file {user_input_file} is stationary about feature {features_y}:
+{stationary_message}
+Please provide a detailed description about stationary,and analyze the meaning of the above message in context
+in a neat and professional statistician's tongue.
 '''
-
 response_text = openai.Completion.create(
     engine=model,
-    prompt=prompt_text,
+    prompt=prompt_cor_stats,
     max_tokens=max_tokens,
-    temperature=0.5,
+    temperature=temperature_2,
 )
 print(f'''{response_text.choices[0].text.strip()}''')
+
+# --------------------------
+# If the feature is stationary then all good, if the feature is not stationary then perform transformation
+
 
 path = "C:/Users/int_shansiming/Desktop/Prediction/Nasdaq.csv"
 path3 = "C:/Users/int_shansiming/Desktop/Prediction/DailyDelhiClimateTest.csv"
