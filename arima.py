@@ -21,15 +21,10 @@ def arima_model(user_input, y):
     plt.figure(figsize=(12, 6))
     plt.plot(series, label='Actual')
     plt.plot(pred, label='Predicted')
+    plt.plot(residuals, label='Residuals')
     plt.legend()
     plt.title('ARIMA Model')
     plt.show()
-
-    plt.figure(figsize=(12, 6))
-    plt.plot(residuals)
-    plt.title('Residuals')
-    plt.show()
-
     return model, pred, residuals, summary
 
 

@@ -7,12 +7,13 @@ import pandas as pd
 import numpy as np
 from tabulate import tabulate
 from statsmodels.tsa.stattools import adfuller
+import cleaning
 
-openai.api_key = "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"
+openai.api_key = "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"
 path = "C:/Users/int_shansiming/Desktop/Prediction/Nasdaq.csv"
 path2 = "C:/Users/int_shansiming/Desktop/Prediction/data.csv"
 path3 = "C:/Users/int_shansiming/Desktop/Prediction/DailyDelhiClimateTest.csv"
-path4 = "C:/Users/int_shansiming/Desktop/Prediction/salary.xlsx"
+path4 = "C:/Users/int_shansiming/Desktop/Prediction/elec.csv"
 
 # ------------------------------------------
 # Set up the parameters for the GPT-3 API
@@ -27,55 +28,47 @@ user_input_file = input("Enter the file location:");
 
 # import the data
 try:
-    user_data = pd.read_csv(user_input_file)
+    user_data = cleaning.clean(user_input_file)
 except ValueError:
-    user_data = pd.read_excel(user_input_file)
+    user_data = cleaning.clean(user_input_file)
 
 # Then get the column names
 col_name = user_data.columns.tolist()
 
-# Ask user for input
-user_input_1 = input("Enter your request");
-
-# Language setting
-user_language = input("In what language do you wish your report to be?");
-
 # Ask for features if the user ask for a plot
-if any(keyword in user_input_1 for keyword in ["plot", "graph", "analyze", "analysis"]):
-    features_x = input(f"Select your x from ({col_name}): ");
-    features_y = input(f"Select your y from ({col_name}): ");
-    method = input("Enter your desired plot type");
-else:
-    user_input_1 = user_input_1
+features_x = input(f"Select your x from {col_name}: ");
+features_y = input(f"Select your y from {col_name}: ");
+x_type = user_data[features_x].dtype
+y_type = user_data[features_y].dtype
+prompt = f'''Based on the name and the type of x and y, distinguish what is the best model for prediction
+the name of x is {features_x}
+the name of y is {features_y}
+the type of x is {x_type}
+the type of y is {y_type}
+if x is date, then consider time series first
+print only the name of the best model, no explainations needed
+'''
+response_text = openai.Completion.create(
+    engine=model,
+    prompt=prompt,
+    max_tokens=max_tokens,
+    temperature=1,
+)
+rec_ml = "The recommended model for these features is" + f'''{response_text.choices[0].text.strip()}'''
+print(rec_ml)
 
-# Building a model?
-ml_model = input("What method do you wish to build your model?")
 # ------------------------------------------
 
-# Introduce the plot type
-# Check if the input contains any keywords
-if any(keyword in user_input_1 for keyword in ["plot", "graph", "analyze", "analysis"]):
-    prompt = f'''Introduce {method} and explain how they are used in data analysis  in {user_language}.'''
 
-    response = openai.Completion.create(
-        engine=model,
-        prompt=prompt,
-        max_tokens=max_tokens,
-        temperature=temperature_1,
-    )
 
-print(f"{method}, {response.choices[0].text.strip()}")
-
-# Check if the input contains any keywords
-# Unsolved problem :4. If there are two features in {features_y}, add a legend.
 print(" ")
 print("\033[1m\033[4m\033[36mPlot\033[0m")
 print(" ")
-if any(keyword in user_input_1 for keyword in ["plot", "graph", "analyze", "analysis"]):
-    prompt = f'''
+
+prompt = f'''
    Generate Python code to accomplish the following tasks:
 1. Import cleaning.py and use the cleaning.clean({user_input_file}), save as 'df'.
-2. Import matplotlib.pyplot as plt and create a {method} to display the relationship between x = {features_x} and y = {features_y}.
+2. Import matplotlib.pyplot as plt and create a plot to display the relationship between x = {features_x} and y = {features_y}.
 3. make the size of the plot: plt.figure(figsize=(12, 6))
 4. Add a title to the graph using the Matplotlib library.
 5. Label the axes using appropriate units based on the names of the features.
@@ -84,30 +77,21 @@ if any(keyword in user_input_1 for keyword in ["plot", "graph", "analyze", "anal
 Please provide the code without any additional comments or notes.
     '''
     # Generate code using the GPT-3 API
-    response = openai.Completion.create(
-        engine=model,
-        prompt=prompt,
-        max_tokens=max_tokens,
-        temperature=temperature_1,
-    )
+response = openai.Completion.create(
+    engine=model,
+    prompt=prompt,
+    max_tokens=max_tokens,
+    temperature=temperature_1,
+)
 
-    # Save the generated code to a file
-    with open("generated_code.py", "w") as f:
-        f.write(response.choices[0].text.strip())
+# Save the generated code to a file
+with open("generated_code.py", "w") as f:
+    f.write(response.choices[0].text.strip())
 
-    # Import the generated code as a module
-    import generated_code
-    runpy.run_path("generated_code.py")
+# Import the generated code as a module
+import generated_code
+runpy.run_path("generated_code.py")
 
-else:
-    prompt = f'''{user_input_1}, The file is from: {user_input_file}'''
-    response = openai.Completion.create(
-        engine=model,
-        prompt=prompt,
-        max_tokens=max_tokens,
-        temperature=temperature_1,
-    )
-    print(response.choices[0].text.strip())
 
 # ------------------------------------------
 # Using openai api to generate a comprehensive report
@@ -181,6 +165,9 @@ response_text = openai.Completion.create(
 )
 print(f'''{response_text.choices[0].text.strip()}''')
 
+###
+
+# --------------------------
 # --------------------------
 # If the data is time series, then whether stationary?
 print(" ")
@@ -211,11 +198,6 @@ response_text = openai.Completion.create(
     temperature=temperature_2,
 )
 print(f'''{response_text.choices[0].text.strip()}''')
-
-# --------------------------
-# If the feature is stationary then all good, if the feature is not stationary then perform difference transformation
-from difference_trans import diff_plt
-diff_series, diff_order = diff_plt(user_input_file, features_y)
 
 # Perform ARIMA
 from arima import arima_model
