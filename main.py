@@ -6,13 +6,15 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
 import cleaning
+import re
+import seaborn as sns
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error, r2_score
 from tabulate import tabulate
 from statsmodels.tsa.stattools import adfuller
 
-openai.api_key = "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"
+openai.api_key = "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"
 path = "C:/Users/int_shansiming/Desktop/Prediction/Nasdaq.csv"
 path2 = "C:/Users/int_shansiming/Desktop/Prediction/data.csv"
 path3 = "C:/Users/int_shansiming/Desktop/Prediction/DailyDelhiClimateTest.csv"
@@ -75,7 +77,8 @@ prompt = f'''Based on the name and the type of x and y, and the request {parsed_
         the name of y is {features_y}
         the type of x is {selected_type} accordingly
         the type of y is {y_type}
-        choose one suitable model based on bias-variance trade-off
+        choose one suitable model based on bias-variance trade-off and based on variables'type
+        for exmaple, when there are type of datetime in the {selected_type}, then a regression model should not be recommended
         you must only print the name of statistical model, no explainations needed
         '''
 response_text = openai.Completion.create(
@@ -193,37 +196,39 @@ response_text = openai.Completion.create(
 )
 print(f'''{response_text.choices[0].text.strip()}''')
 
+term_mappings = {
+    "time series analysis": ["time series analysis", "time series", "ARIMA", "SARIMAX", "seasonal decomposition",
+                             "Holt-Winters"],
+    "linear regression": ["linear regression", "LinearRegression", "OLS", "ordinary least squares", "linear model"],
+    "logistic regression": ["logistic regression", "LogisticRegression", "logit", "logistic model"],
+    "correlation analysis": ["correlation analysis", "correlation", "correlation coefficient", "Pearson", "Spearman",
+                             "Kendall"],
+    "support vector machines": ["support vector machines", "SVM", "support vector machine"],
+    "decision trees": ["decision trees", "DecisionTree", "decision tree", "CART", "classification and regression tree"],
+    "random forests": ["random forests", "RandomForest", "random forest"],
+    "gradient boosting": ["gradient boosting", "GradientBoosting", "GBM", "XGBoost", "LightGBM", "CatBoost"],
+    "neural networks": ["neural networks", "neural network", "deep learning", "artificial neural network", "ANN"],
+    "k-means clustering": ["k-means clustering", "KMeans", "k-means"],
+    "principal component analysis": ["principal component analysis", "PCA", "principal components"]}
 
-def standardize_term(text):
-    term_mappings = {
-        "time series analysis": ["time series analysis", "time series", "ARIMA", "SARIMAX", "seasonal decomposition",
-                                 "Holt-Winters"],
-        "linear regression": ["linear regression", "LinearRegression", "OLS", "ordinary least squares", "linear model"],
-        "logistic regression": ["logistic regression", "LogisticRegression", "logit", "logistic model"],
-        "correlation analysis": ["correlation analysis", "correlation", "correlation coefficient", "Pearson",
-                                 "Spearman", "Kendall"],
-        "support vector machines": ["support vector machines", "SVM", "support vector machine"],
-        "decision trees": ["decision trees", "DecisionTree", "decision tree", "CART",
-                           "classification and regression tree"],
-        "random forests": ["random forests", "RandomForest", "random forest"],
-        "gradient boosting": ["gradient boosting", "GradientBoosting", "GBM", "XGBoost", "LightGBM", "CatBoost"],
-        "neural networks": ["neural networks", "neural network", "deep learning", "artificial neural network", "ANN"],
-        "k-means clustering": ["k-means clustering", "KMeans", "k-means"],
-        "principal component analysis": ["principal component analysis", "PCA", "principal components"]
-    }
 
+def standardize_term(user_request, rec_ml):
+    # First, search for a match in user_request
     for standard_term, synonyms in term_mappings.items():
         for syn in synonyms:
-            if syn.lower() in text.lower():
+            if re.search(rf'\b{re.escape(syn.lower())}\b', user_request.lower()):
+                return standard_term
+
+    # If no match is found in user_request, search for a match in rec_ml
+    for standard_term, synonyms in term_mappings.items():
+        for syn in synonyms:
+            if re.search(rf'\b{re.escape(syn.lower())}\b', rec_ml.lower()):
                 return standard_term
 
     return None  # If no match is found, return None
 
 
-# Usage
-# Replace this with the output from GPT-3
-
-standard_method_name = standardize_term(rec_ml)
+standard_method_name = standardize_term(user_request, rec_ml)
 
 ###
 # --------------------------
@@ -361,6 +366,7 @@ elif standard_method_name == "linear regression":
 
     # Calculate and visualize residuals
     residuals = y_test - y_test_pred
+    plt.figure(figsize=(12, 6))
     plt.scatter(y_test, residuals, alpha=0.5)
     plt.title("Test Residuals vs. True Values")
     plt.xlabel("True Values")
@@ -369,7 +375,8 @@ elif standard_method_name == "linear regression":
     plt.show()
 
     # Scatter plot of true values vs. predicted values
-    plt.scatter(y_test, y_pred, alpha=0.5)
+    plt.figure(figsize=(12, 6))
+    plt.scatter(y_test, y_test_pred, alpha=0.5)
     plt.title("True Values vs. Test Predicted Values")
     plt.xlabel("True Values")
     plt.ylabel("Predicted Values")
@@ -424,9 +431,56 @@ elif standard_method_name == "linear regression":
     print(" ")
     print(f'''{response_text.choices[0].text.strip()}''')
 
+elif standard_method_name == "correlation analysis":
+    print(" ")
+    print("\033[1m\033[4m\033[36mCorrelation Analysis\033[0m")
+    print(" ")
+    # --------------------------
+    # --------------------------
+    # --Correlation Analysis----
+    # --------------------------
+    # --------------------------
+    # Calculate correlation coefficients between the predictor and independent variables
+    correlations = user_data[[features_y] + selected_v].corr()
+    print(" ")
+    print("\033[1m\033[4m\033[36mCoorelation Matrix\033[0m")
+    print(" ")
+    # Display the correlation matrix
+    print("Correlation Matrix:")
+    print(correlations)
+    print(" ")
+    print("\033[1m\033[4m\033[36mHeat Map\033[0m")
+    print(" ")
+    # Visualize the correlation matrix using a heatmap
+    plt.figure(figsize=(8, 6))
+    sns.heatmap(correlations, annot=True, cmap='coolwarm', vmin=-1, vmax=1)
+    plt.title("Correlation Heatmap")
+    plt.show()
+    prompt = f'''Given the following correlation coefficients between a predictor variable {features_y}
+    and several independent variables in the {correlations}, please provide a detailed interpretation of the relationships, 
+    their strengths, and directions:
+    Correlation between features_y and independent_var1: [value1]
+    Correlation between features_y and independent_var2: [value2]
+    Correlation between features_y and independent_var3: [value3]
+    Explain the significance and meaning of these correlation coefficients, 
+    as well as any potential implications for the relationship between the predictor and the independent variables.
+
+    '''
+    response_text = openai.Completion.create(
+        engine=model_text,
+        prompt=prompt,
+        max_tokens=max_tokens,
+        temperature=temperature_2,
+    )
+    print(" ")
+    print("\033[1m\033[4m\033[36mSummary\033[0m")
+    print(" ")
+    print(f'''{response_text.choices[0].text.strip()}''')
 else:
     pass
 
+print(standard_method_name)
+
 path = "C:/Users/int_shansiming/Desktop/Prediction/Nasdaq.csv"
 path3 = "C:/Users/int_shansiming/Desktop/Prediction/DailyDelhiClimateTest.csv"
-
+# analyze the relationshp between humidity wind speed meantemp and meanpressure using correlation analysis
